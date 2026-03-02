@@ -1,5 +1,5 @@
 flask
-firebase-admin
 gunicorn
 requests
-google-auth
+beautifulsoup4
+firebase-admin
