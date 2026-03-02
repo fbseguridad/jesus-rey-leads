@@ -1,25 +1,42 @@
+from flask import Flask, render_template, request
+import firebase_admin
+from firebase_admin import credentials, firestore
 import os
-from flask import Flask, jsonify, request, send_from_directory
 
 app = Flask(__name__)
 
-leads_db = [
-    {"id": 1, "zona": "laferrere", "rubro": "albañileria", "detalle": "Pared 15m", "contacto": "wa.me/5491135101508"},
-    {"id": 2, "zona": "catan", "rubro": "ventas", "detalle": "Vendedor materiales", "contacto": "fb.com/456"},
-    {"id": 3, "zona": "san-justo", "rubro": "seguridad", "detalle": "Camaras obra", "contacto": "fb.com/789"}
-]
+# Conectar a Firebase usando la llave que acabamos de subir
+if not firebase_admin._apps:
+    cred = credentials.Certificate('firebase-key.json')
+    firebase_admin.initialize_app(cred)
 
-@app.route('/')
+db = firestore.client()
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    return send_from_directory('.', 'index.html')
+    zona = ""
+    rubro = ""
+    resultados = []
 
-@app.route('/api/buscar')
-def buscar():
-    z = request.args.get('zona', '').lower()
-    r = request.args.get('rubro', '').lower()
-    res = [l for l in leads_db if l['zona'] == z and l['rubro'] == r]
-    return jsonify(res)
+    if request.method == 'POST':
+        zona = request.form.get('zona', '').strip().lower()
+        rubro = request.form.get('rubro', '').strip().lower()
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+        # Buscamos en la colección 'leads' de Firebase
+        leads_ref = db.collection('leads')
+        docs = leads_ref.stream()
+
+        for doc in docs:
+            lead = doc.to_dict()
+            l_zona = lead.get('zona', '').lower()
+            l_rubro = lead.get('rubro', '').lower()
+            
+            # Si el usuario busca algo, filtramos; si no, mostramos todo
+            if (not zona or zona in l_zona) and (not rubro or rubro in l_rubro):
+                resultados.append(lead)
+
+    return render_template('index.html', resultados=resultados, zona=zona, rubro=rubro)
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
