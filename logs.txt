@@ -1,0 +1,5 @@
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/jesus-rey-leads/robot_auto.py", line 2, in <module>
+    import firebase_admin
+ModuleNotFoundError: No module named 'firebase_admin'
